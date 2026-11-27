@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>PetalLock — Interactive Floral Love Letters &amp; Secret Heart Vault</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Dancing+Script:wght@600;700&family=Great+Vibes&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- External Stylesheet & Supabase SDK -->
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body data-theme="crimson">
+
+    <!-- Fullscreen 3D Drifting Petals Canvas -->
+    <canvas id="petal-canvas"></canvas>
+
+    <!-- Interactive Tap-to-Bloom SVG Flower Layer -->
+    <div id="tap-bloom-layer" aria-hidden="true"></div>
+
+    <!-- Live Preview Top Bar -->
+    <div id="preview-banner-bar" class="preview-banner-bar">
+        <span class="preview-banner-tag">👁️ Preview</span>
+        <button type="button" class="btn-gold" style="min-height: 36px; padding: 0.35rem 0.85rem; font-size: 0.78rem;" onclick="exitPreviewToEditor()">
+            ← Back to Editor
+        </button>
+    </div>
+
+    <!-- Floating Top-Right Music & Sound Toggle -->
+    <button type="button" id="sound-toggle-btn" class="floating-sound-btn" aria-label="Toggle romantic background piano music and sound effects">
+        <span id="sound-icon">🎵</span>
+        <span id="sound-text">Music On</span>
+    </button>
+
+    <!-- Non-blocking Toast Message Banner -->
+    <div id="toast-banner" class="toast-banner" role="status" aria-live="polite"></div>
+
+    <!-- MAIN APPLICATION SHELL -->
+    <main class="app-shell">
+
+        <!-- MODE A: CREATOR STUDIO -->
+        <div id="creator-view" class="view-root">
+
+            <!-- Top Navigation Bar -->
+            <nav class="brand-nav">
+                <a class="brand-logo" onclick="showCreatorSection('landing')">
+                    🌸 Petal<span>Lock</span>
+                </a>
+                <div class="nav-actions">
+                    <button type="button" class="btn-ghost" onclick="launchDemoExperience()">
+                        <span>Live Demo 🌹</span>
+                    </button>
+                    <button type="button" class="btn-primary" onclick="startWizardFresh()">
+                        <span>Create Yours ✨</span>
+                    </button>
+                </div>
+            </nav>
+
+            <!-- SUB-VIEW A1: LANDING PAGE -->
+            <section id="creator-landing" class="glass-card landing-hero">
+                <span class="pill-badge">Interactive Floral Love Vaults</span>
+                <h1 class="landing-title">
+                    Lock Your Heart With Her Name &amp; Let Every Secret <em>Bloom</em>
+                </h1>
+                <p class="landing-sub">
+                    Craft a personalized, interactive floral love letter, 3D secret cards, wax-sealed envelopes, an interactive Love Jar, and a Magical Pen finale—for just <strong>₹99</strong>.
+                </p>
+
+                <div class="hero-cta-row">
+                    <button type="button" class="btn-primary" onclick="startWizardFresh()">
+                        <span>Start Creating (₹99) ✨</span>
+                    </button>
+                    <button type="button" class="btn-gold" onclick="launchDemoExperience()">
+                        <span>Try Live Demo 🌹</span>
+                    </button>
+                </div>
+
+                <div class="feature-trio">
+                    <div class="feature-mini-card">
+                        <div style="font-size: 1.55rem;">🌺</div>
+                        <h3>1. Personalize &amp; Inspire</h3>
+                        <p>
+                            Enter your names, secret key, memories, and promises—or tap <strong>“✨ Inspiration”</strong> on any box for 15+ poetic lines tailored to her name.
+                        </p>
+                    </div>
+                    <div class="feature-mini-card">
+                        <div style="font-size: 1.55rem;">🏺</div>
+                        <h3>2. Secrets, Jar &amp; Magic Pen</h3>
+                        <p>
+                            She unlocks a blooming wreath locket, flips 3D secret cards, pulls folded notes from your Love Jar, and watches a quill write your final confession.
+                        </p>
+                    </div>
+                    <div class="feature-mini-card">
+                        <div style="font-size: 1.55rem;">💌</div>
+                        <h3>3. Instant ₹99 Order ID</h3>
+                        <p>
+                            Preview your complete creation first, get your short <strong>PL-...</strong> Order ID, pay ₹99 via UPI, and receive your permanent short link &amp; QR card.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SUB-VIEW A2: 4-STEP GUIDED WIZARD -->
+            <section id="creator-wizard" class="wizard-shell" style="display: none;">
+                <div class="wizard-topbar">
+                    <button type="button" class="btn-ghost" onclick="showCreatorSection('landing')">
+                        ← Home
+                    </button>
+                    <button type="button" class="btn-gold" onclick="launchLivePreview()">
+                        <span>👁️ Live Preview</span>
+                    </button>
+                </div>
+
+                <div class="wizard-steps-nav" role="tablist">
+                    <button type="button" class="step-tab active" data-step="1" onclick="goWizardStep(1)">1. Names &amp; Theme</button>
+                    <button type="button" class="step-tab" data-step="2" onclick="goWizardStep(2)">2. Love Story</button>
+                    <button type="button" class="step-tab" data-step="3" onclick="goWizardStep(3)">3. Secrets &amp; Jar</button>
+                    <button type="button" class="step-tab" data-step="4" onclick="goWizardStep(4)">4. Magic Pen &amp; Order</button>
+                </div>
+
+                <!-- STEP 1 -->
+                <div id="wizard-step-1" class="glass-card wizard-panel">
+                    <div class="wizard-panel-header">
+                        <span class="pill-badge">Step 1 of 4</span>
+                        <h2>Names, Secret Key &amp; Floral Theme</h2>
+                        <p>Set who this heart belongs to and choose the blooming atmosphere she will step into.</p>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="field-group">
+                            <label class="field-label" for="inp-your-name">Your Name</label>
+                            <input type="text" id="inp-your-name" class="studio-input" placeholder="e.g., Aarav" oninput="syncFormToState()">
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label" for="inp-her-name">Her Name</label>
+                            <input type="text" id="inp-her-name" class="studio-input" placeholder="e.g., Ananya" oninput="handleHerNameInput(this.value)">
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="field-group">
+                            <div class="field-label-row">
+                                <label class="field-label" for="inp-secret-key">Secret Key to Unlock</label>
+                                <button type="button" class="btn-inspire" onclick="applyInspiration('secretKey')">✨ Inspiration (1/15)</button>
+                            </div>
+                            <input type="text" id="inp-secret-key" class="studio-input" placeholder="Defaults to her name..." oninput="manualKeyEdited = true; syncFormToState();">
+                            <span class="field-hint-small">Case-insensitive (her name, cute nickname, or special word).</span>
+                        </div>
+
+                        <div class="field-group">
+                            <div class="field-label-row">
+                                <label class="field-label" for="inp-key-hint">Hint If She Guesses Wrong</label>
+                                <button type="button" class="btn-inspire" onclick="applyInspiration('keyHint')">✨ Inspiration (1/15)</button>
+                            </div>
+                            <input type="text" id="inp-key-hint" class="studio-input" placeholder="Only one name owns every beat of my heart..." oninput="syncFormToState()">
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label class="field-label" for="inp-start-date">Relationship Start Date (Optional — Powers Live Love Counter)</label>
+                        <div style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap;">
+                            <input type="date" id="inp-start-date" class="studio-input" style="max-width: 240px;" onchange="syncFormToState()">
+                            <button type="button" class="btn-ghost" style="min-height: 44px; padding: 0.45rem 0.95rem; font-size: 0.8rem;" onclick="document.getElementById('inp-start-date').value=''; syncFormToState();">
+                                Clear Date
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="field-group" style="margin-bottom: 0;">
+                        <label class="field-label">Choose Your Floral Theme (Live Preview)</label>
+                        <div class="theme-picker-grid">
+                            <button type="button" class="theme-choice-card selected" data-theme-id="crimson" onclick="selectStudioTheme('crimson')">
+                                <div class="theme-swatches">
+                                    <span class="swatch-dot" style="background: #260610;"></span>
+                                    <span class="swatch-dot" style="background: #8b1e3f;"></span>
+                                    <span class="swatch-dot" style="background: #e8c27a;"></span>
+                                </div>
+                                <h4>Crimson Velvet Rose</h4>
+                                <p>Deep crimson, velvet rose &amp; champagne gold</p>
+                            </button>
+
+                            <button type="button" class="theme-choice-card" data-theme-id="midnight" onclick="selectStudioTheme('midnight')">
+                                <div class="theme-swatches">
+                                    <span class="swatch-dot" style="background: #130b24;"></span>
+                                    <span class="swatch-dot" style="background: #ff7eb3;"></span>
+                                    <span class="swatch-dot" style="background: #f3d9b1;"></span>
+                                </div>
+                                <h4>Midnight Cherry Blossom</h4>
+                                <p>Starry indigo-plum, sakura pink &amp; moonlight gold</p>
+                            </button>
+
+                            <button type="button" class="theme-choice-card" data-theme-id="ivory" onclick="selectStudioTheme('ivory')">
+                                <div class="theme-swatches">
+                                    <span class="swatch-dot" style="background: #fdf6ec;"></span>
+                                    <span class="swatch-dot" style="background: #c85a7c;"></span>
+                                    <span class="swatch-dot" style="background: #b8860b;"></span>
+                                </div>
+                                <h4>Ivory Peony &amp; Gold</h4>
+                                <p>Warm parchment, blush peony &amp; antique gold</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="wizard-footer-nav">
+                        <span></span>
+                        <button type="button" class="btn-primary" onclick="goWizardStep(2)">Next: Your Love Story →</button>
+                    </div>
+                </div>
+
+                <!-- STEP 2 -->
+                <div id="wizard-step-2" class="glass-card wizard-panel hidden">
+                    <div class="wizard-panel-header">
+                        <span class="pill-badge">Step 2 of 4</span>
+                        <h2>Your Love Story &amp; Cherished Moments</h2>
+                        <p>Write from your heart—or tap <strong>“✨ Inspiration”</strong> on any box to cycle through 15+ romantic messages.</p>
+                    </div>
+
+                    <div class="field-group">
+                        <div class="field-label-row">
+                            <label class="field-label" for="inp-chapter-1">Chapter I — First Welcome Letter After Unlock</label>
+                            <button type="button" class="btn-inspire" onclick="applyInspiration('chapter1')">✨ Inspiration (1/15)</button>
+                        </div>
+                        <textarea id="inp-chapter-1" class="studio-textarea" placeholder="What happens the moment she unlocks your heart..." oninput="syncFormToState()"></textarea>
+                    </div>
+
+                    <div class="field-group">
+                        <div class="field-label-row">
+                            <label class="field-label" for="inp-chapter-2">Chapter II — Second Deeper Confession</label>
+                            <button type="button" class="btn-inspire" onclick="applyInspiration('chapter2')">✨ Inspiration (1/15)</button>
+                        </div>
+                        <textarea id="inp-chapter-2" class="studio-textarea" placeholder="How she changed your life and why she feels like home..." oninput="syncFormToState()"></textarea>
+                    </div>
+
+                    <div class="field-group">
+                        <div class="field-label-row">
+                            <label class="field-label" for="inp-first-kiss">Our First Kiss / Unforgettable Moment Together</label>
+                            <button type="button" class="btn-inspire" onclick="applyInspiration('firstKiss')">✨ Inspiration (1/15)</button>
+                        </div>
+                        <textarea id="inp-first-kiss" class="studio-textarea" placeholder="Where it happened, how nervous or magical it felt..." oninput="syncFormToState()"></textarea>
+                    </div>
+
+                    <div class="field-group" style="margin-bottom: 0;">
+                        <div class="field-label-row">
+                            <label class="field-label" for="inp-little-details">Little Details About Her That You Secretly Adore</label>
+                            <button type="button" class="btn-inspire" onclick="applyInspiration('littleDetails')">✨ Inspiration (1/15)</button>
+                        </div>
+                        <textarea id="inp-little-details" class="studio-textarea" placeholder="Her eyes, her smile, how she acts when upset, her cute habits..." oninput="syncFormToState()"></textarea>
+                    </div>
+
+                    <div class="wizard-footer-nav">
+                        <button type="button" class="btn-ghost" onclick="goWizardStep(1)">← Previous</button>
+                        <button type="button" class="btn-primary" onclick="goWizardStep(3)">Next: Secrets &amp; Love Jar →</button>
+                    </div>
+                </div>
+
+                <!-- STEP 3 -->
+                <div id="wizard-step-3" class="glass-card wizard-panel hidden">
+                    <div class="wizard-panel-header">
+                        <span class="pill-badge">Step 3 of 4</span>
+                        <h2>Love Jar Promises &amp; Secret Vault</h2>
+                        <p>Fill her Love Jar with folded paper notes, and choose Fast Mode or Deep Edit Mode for all cards &amp; envelopes.</p>
+                    </div>
+
+                    <div class="jar-builder-box">
+                        <div class="field-label-row" style="margin-bottom: 0.75rem;">
+                            <span class="field-label">🏺 Folded Notes Inside Her Love Jar (<span id="jar-builder-count">6</span> notes)</span>
+                            <button type="button" class="btn-inspire" onclick="addInspiredJarNote()">✨ Add Inspired Note (15+)</button>
+                        </div>
+
+                        <div id="jar-notes-list"></div>
+
+                        <div class="add-jar-row">
+                            <select id="new-jar-tag" class="studio-select" aria-label="Note category">
+                                <option value="Sacred Promise">Sacred Promise</option>
+                                <option value="Sweet Memory">Sweet Memory</option>
+                                <option value="Little Secret">Little Secret</option>
+                                <option value="Always & Forever">Always &amp; Forever</option>
+                            </select>
+                            <input type="text" id="new-jar-text" class="studio-input" placeholder="Write a sweet promise or secret note...">
+                            <button type="button" class="btn-primary" onclick="addCustomJarNote()">+ Add</button>
+                        </div>
+                    </div>
+
+                    <div class="mode-switch-bar" role="tablist">
+                        <button type="button" id="btn-fast-mode" class="mode-pill-btn active" onclick="setDeepEditMode(false)">
+                            ⚡ Fast 2-Minute Mode
+                        </button>
+                        <button type="button" id="btn-deep-mode" class="mode-pill-btn" onclick="setDeepEditMode(true)">
+                            ✍️ Deep Edit Mode (All 10 Items)
+                        </button>
+                    </div>
+
+                    <div id="fast-mode-summary" class="deep-item-card" style="text-align: center;">
+                        <p style="font-size: 0.9rem; color: var(--text-muted);">
+                            ⚡ <strong>Fast Mode Active:</strong> Your 6 3D Flip Secret Cards and 4 Wax-Sealed <em>“Open When...”</em> Envelopes are automatically personalized with her name, your name, your first kiss, and the little details you entered! Switch to <strong>Deep Edit Mode</strong> anytime to customize every single card &amp; letter individually with 15+ inspirations each.
+                        </p>
+                    </div>
+
+                    <div id="deep-edit-container" class="deep-edit-accordion">
+                        <h3 style="font-family: var(--font-serif); font-size: 1.45rem; color: var(--accent-gold);">
+                            6 Interactive 3D Flip Secret Cards
+                        </h3>
+                        <div id="deep-cards-editor-list" style="display: flex; flex-direction: column; gap: 0.9rem;"></div>
+
+                        <h3 style="font-family: var(--font-serif); font-size: 1.45rem; color: var(--accent-gold); margin-top: 0.6rem;">
+                            4 Wax-Sealed “Open When...” Envelopes
+                        </h3>
+                        <div id="deep-envelopes-editor-list" style="display: flex; flex-direction: column; gap: 0.9rem;"></div>
+                    </div>
+
+                    <div class="wizard-footer-nav">
+                        <button type="button" class="btn-ghost" onclick="goWizardStep(2)">← Previous</button>
+                        <button type="button" class="btn-primary" onclick="goWizardStep(4)">Next: Magical Pen &amp; Order →</button>
+                    </div>
+                </div>
+
+                <!-- STEP 4 -->
+                <div id="wizard-step-4" class="glass-card wizard-panel hidden">
+                    <div class="wizard-panel-header">
+                        <span class="pill-badge">Step 4 of 4</span>
+                        <h2>The Magical Pen Finale</h2>
+                        <p>When she clicks “Sign With Magical Pen”, a golden quill signs your name, dissolves the letter into stardust, and writes your secret finale message across the clean parchment.</p>
+                    </div>
+
+                    <div class="field-group">
+                        <div class="field-label-row">
+                            <label class="field-label" for="inp-signature">Your Closing Signature</label>
+                            <button type="button" class="btn-inspire" onclick="applyInspiration('signature')">✨ Inspiration (1/15)</button>
+                        </div>
+                        <input type="text" id="inp-signature" class="studio-input" placeholder="e.g., Forever yours, Aarav" oninput="syncFormToState()">
+                    </div>
+
+                    <div class="field-group" style="margin-bottom: 0;">
+                        <div class="field-label-row">
+                            <label class="field-label" for="inp-finale-msg">Secret Vanishing-Ink Finale Message (Written by the Quill)</label>
+                            <button type="button" class="btn-inspire" onclick="applyInspiration('finaleMsg')">✨ Inspiration (1/15)</button>
+                        </div>
+                        <textarea id="inp-finale-msg" class="studio-textarea" placeholder="I love you sooooooo much my favorite human, my whole heart, my forever 🥹" oninput="syncFormToState()"></textarea>
+                    </div>
+
+                    <div class="wizard-footer-nav">
+                        <button type="button" class="btn-ghost" onclick="goWizardStep(3)">← Previous</button>
+                        <div style="display: flex; gap: 0.7rem; flex-wrap: wrap;">
+                            <button type="button" class="btn-gold" onclick="launchLivePreview()">
+                                <span>👁️ Live Preview</span>
+                            </button>
+                            <button type="button" id="btn-submit-order" class="btn-primary" onclick="generateOrderCheckout()">
+                                <span>Create ₹99 Order ID 💌</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SUB-VIEW A3: CUSTOMER ₹99 ORDER ID & DM PAYMENT SCREEN -->
+            <section id="creator-checkout" class="glass-card checkout-card" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem;">
+                    <button type="button" class="btn-ghost" onclick="showCreatorSection('wizard')">
+                        ← Back to Edit
+                    </button>
+                    <button type="button" class="btn-gold" onclick="launchLivePreview()">
+                        <span>👁️ Preview Before Paying</span>
+                    </button>
+                </div>
+
+                <span class="pill-badge">Order Saved • ₹99 Activation</span>
+                <h2 style="font-family: var(--font-serif); font-size: clamp(1.9rem, 4.5vw, 2.6rem); margin-top: 0.6rem;">
+                    Your Order ID for <span id="checkout-her-name" style="color: var(--accent-gold); font-style: italic;">Her</span>
+                </h2>
+                <p style="font-size: 0.94rem; color: var(--text-muted); margin-top: 0.3rem;">
+                    Your love vault is safely saved in our system! Complete the <strong>₹99</strong> UPI payment and send your short Order ID below to activate your permanent link &amp; printable Floral QR card.
+                </p>
+
+                <!-- Short Order ID Box -->
+                <div class="order-code-display-box" style="justify-content: space-between;">
+                    <span id="generated-order-id" class="order-id-pill">PL-0000</span>
+                    <button type="button" class="btn-primary" onclick="copyOrderId()">
+                        📋 Copy Order ID
+                    </button>
+                </div>
+
+                <div class="payment-steps-grid">
+                    <div class="pay-step-box">
+                        <span class="pay-step-num">Step 01</span>
+                        <h4>Copy Order ID</h4>
+                        <p>Tap <strong>“Copy Order ID”</strong> above. Your custom letters, secrets, and Jar notes are safely stored under this ID.</p>
+                    </div>
+
+                    <div class="pay-step-box">
+                        <span class="pay-step-num">Step 02</span>
+                        <h4>Pay ₹99 via UPI</h4>
+                        <p>Send <strong>₹99</strong> via any UPI app (GPay / PhonePe / Paytm) using the UPI ID below:</p>
+                        <div class="upi-badge-pill" onclick="copyConfiguredUpi()" title="Tap to copy UPI ID">
+                            <span>💳</span>
+                            <span id="checkout-upi-display">petallock@upi</span>
+                        </div>
+                    </div>
+
+                    <div class="pay-step-box">
+                        <span class="pay-step-num">Step 03</span>
+                        <h4>DM ID &amp; Activate</h4>
+                        <p>Send your Order ID + payment screenshot via WhatsApp or Instagram DM (<strong id="checkout-ig-display">@petallock</strong>) to unlock your link!</p>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 0.8rem;">
+                    <button type="button" class="btn-primary" onclick="sendOrderViaWhatsApp()">
+                        💬 Send Order ID &amp; Pay ₹99 on WhatsApp
+                    </button>
+                    <button type="button" class="btn-gold" onclick="copyDmMessageBundle()">
+                        📩 Copy Ready-to-Send DM Message
+                    </button>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- MODE B: RECIPIENT EXPERIENCE -->
+        <div id="recipient-view" class="view-root hidden">
+
+            <!-- STAGE 1: LOCK SCREEN -->
+            <section id="rec-stage-1" class="rec-stage active">
+                <div id="rec-lock-card" class="glass-card lock-card-wrap">
+                    <span id="rec-for-pill" class="pill-badge">For You Only</span>
+
+                    <div id="wreath-lock-stage" class="wreath-lock-stage" aria-hidden="true">
+                        <svg class="botanical-wreath-svg" viewBox="0 0 250 230" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path class="wreath-stem" d="M125 204C78 202 44 166 44 116C44 74 72 42 104 32"/>
+                            <path class="wreath-stem" d="M125 204C172 202 206 166 206 116C206 74 178 42 146 32"/>
+                            <path class="wreath-leaf" d="M62 174C46 170 40 156 52 148C64 156 68 166 62 174Z"/>
+                            <path class="wreath-leaf" d="M188 174C204 170 210 156 198 148C186 156 182 166 188 174Z"/>
+                            <path class="wreath-leaf" d="M44 126C26 118 24 102 38 98C48 108 50 118 44 126Z"/>
+                            <path class="wreath-leaf" d="M206 126C224 118 226 102 212 98C202 108 200 118 206 126Z"/>
+                            <path class="wreath-leaf" d="M66 66C52 54 56 38 70 42C76 52 74 62 66 66Z"/>
+                            <path class="wreath-leaf" d="M184 66C198 54 194 38 180 42C174 52 176 62 184 66Z"/>
+
+                            <g class="wreath-blossom b-1" transform="translate(56, 152)"><circle r="13" fill="var(--wreath-flower-outer)"/><circle r="8" fill="var(--wreath-flower-inner)"/><circle r="3.5" fill="var(--wreath-flower-core)"/></g>
+                            <g class="wreath-blossom b-2" transform="translate(194, 152)"><circle r="13" fill="var(--wreath-flower-outer)"/><circle r="8" fill="var(--wreath-flower-inner)"/><circle r="3.5" fill="var(--wreath-flower-core)"/></g>
+                            <g class="wreath-blossom b-3" transform="translate(44, 102)"><circle r="15" fill="var(--wreath-flower-outer)"/><circle r="9.5" fill="var(--wreath-flower-inner)"/><circle r="4" fill="var(--wreath-flower-core)"/></g>
+                            <g class="wreath-blossom b-4" transform="translate(206, 102)"><circle r="15" fill="var(--wreath-flower-outer)"/><circle r="9.5" fill="var(--wreath-flower-inner)"/><circle r="4" fill="var(--wreath-flower-core)"/></g>
+                            <g class="wreath-blossom b-5" transform="translate(82, 46)"><circle r="12" fill="var(--wreath-flower-outer)"/><circle r="7.5" fill="var(--wreath-flower-inner)"/><circle r="3" fill="var(--wreath-flower-core)"/></g>
+                            <g class="wreath-blossom b-6" transform="translate(168, 46)"><circle r="12" fill="var(--wreath-flower-outer)"/><circle r="7.5" fill="var(--wreath-flower-inner)"/><circle r="3" fill="var(--wreath-flower-core)"/></g>
+                        </svg>
+
+                        <svg class="heart-padlock-svg" width="102" height="118" viewBox="0 0 108 124" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path class="lock-shackle" d="M33 52V34C33 22.402 42.402 13 54 13C65.598 13 75 22.402 75 34V52" stroke="url(#recGoldGrad)" stroke-width="8" stroke-linecap="round"/>
+                            <path d="M54 112C54 112 14 86.5 14 57C14 43.2 24.8 33 38 33C46.2 33 51.8 37.2 54 43.2C56.2 37.2 61.8 33 70 33C83.2 33 94 43.2 94 57C94 86.5 54 112 54 112Z" fill="var(--accent-primary-bright)" stroke="url(#recGoldGrad)" stroke-width="2.5"/>
+                            <circle cx="54" cy="63" r="6.5" fill="#fde68a"/>
+                            <path d="M50.5 67L48.5 83H59.5L57.5 67H50.5Z" fill="#fde68a"/>
+                            <defs>
+                                <linearGradient id="recGoldGrad" x1="30" y1="13" x2="78" y2="55" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#fff3cf"/>
+                                    <stop offset="50%" stop-color="#e8c27a"/>
+                                    <stop offset="100%" stop-color="#b38735"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+
+                    <h1 class="lock-heading">Enter the Key to My Heart</h1>
+                    <p class="lock-desc">
+                        My heart is locked and waiting for the only soul who owns it. Enter the secret key to let every petal bloom.
+                    </p>
+
+                    <form id="rec-unlock-form" autocomplete="off">
+                        <input type="text" id="rec-key-input" class="key-unlock-input" placeholder="Enter the secret key..." aria-label="Enter the secret key to unlock">
+                        <div id="rec-wrong-hint" class="wrong-key-hint" role="alert"></div>
+                        <button type="submit" class="btn-primary" style="width: 100%;">
+                            <span>Unlock My Heart 🌸</span>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- STAGE 2: CHAPTER I -->
+            <section id="rec-stage-2" class="rec-stage hidden">
+                <article class="glass-card chapter-sheet">
+                    <span class="pill-badge">Chapter I • Welcome Inside</span>
+                    <h2 class="chapter-heading">
+                        Every Petal Bloomed for You, <span id="rec-ch1-her-name">My Love</span>
+                    </h2>
+                    <div id="rec-ch1-body" class="chapter-body-text"></div>
+                    <button type="button" class="btn-primary" onclick="goRecStage('rec-stage-2', 'rec-stage-3')">
+                        <span>Read My Second Confession →</span>
+                    </button>
+                </article>
+            </section>
+
+            <!-- STAGE 3: CHAPTER II -->
+            <section id="rec-stage-3" class="rec-stage hidden">
+                <article class="glass-card chapter-sheet">
+                    <span class="pill-badge">Chapter II • A Deeper Confession</span>
+                    <h2 class="chapter-heading">
+                        You Are My Favorite <span>Forever</span>
+                    </h2>
+                    <div id="rec-ch2-body" class="chapter-body-text"></div>
+                    <button type="button" class="btn-gold" onclick="openRecHeartVault()">
+                        <span>Open My Heart &amp; Reveal All Secrets ♥</span>
+                    </button>
+                </article>
+            </section>
+
+            <!-- STAGE 4: OPEN HEART VAULT -->
+            <section id="rec-stage-4" class="rec-stage hidden">
+                <div class="vault-stack">
+
+                    <header class="glass-card vault-hero-card">
+                        <span class="pill-badge">Chapter III • All Secrets Unlocked</span>
+                        <h1>Welcome Inside My Heart, <span id="rec-vault-her-name">My Love</span></h1>
+                        <p style="color: var(--text-muted); max-width: 560px; margin: 0 auto;">
+                            Every hidden truth, every cherished memory, and every promise I keep for you is unlocked below.
+                        </p>
+
+                        <div id="rec-timer-panel" class="live-timer-panel" style="display: none;">
+                            <span id="rec-timer-caption" style="font-size: 0.74rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-secondary);">
+                                Loving you every second since our story began
+                            </span>
+                            <div class="timer-digits-row">
+                                <div class="timer-cell"><span id="rt-days" class="timer-val">00</span><span class="timer-lbl">Days</span></div>
+                                <div class="timer-cell"><span id="rt-hours" class="timer-val">00</span><span class="timer-lbl">Hours</span></div>
+                                <div class="timer-cell"><span id="rt-mins" class="timer-val">00</span><span class="timer-lbl">Minutes</span></div>
+                                <div class="timer-cell"><span id="rt-secs" class="timer-val">00</span><span class="timer-lbl">Seconds</span></div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div>
+                        <div class="vault-sec-head">
+                            <span class="pill-badge">Secret Cards</span>
+                            <h2>My Little Secrets About You</h2>
+                            <p>Tap any card to flip it over and read what my heart adores about you</p>
+                        </div>
+                        <div id="rec-flip-cards-grid" class="secrets-grid"></div>
+                    </div>
+
+                    <div>
+                        <div class="vault-sec-head">
+                            <span class="pill-badge">Wax-Sealed Envelopes</span>
+                            <h2>Open When... Secret Letters</h2>
+                            <p>Break the wax seal whenever your heart needs a reminder</p>
+                        </div>
+                        <div id="rec-envelopes-grid" class="wax-envelopes-grid"></div>
+                    </div>
+
+                    <div class="glass-card love-jar-card">
+                        <span class="pill-badge">Jar of Promises &amp; Folded Notes</span>
+                        <h2 style="font-family: var(--font-serif); font-size: clamp(1.8rem, 4vw, 2.4rem); color: var(--accent-gold); margin-top: 0.55rem;">
+                            My Secret Love Jar for You
+                        </h2>
+                        <p style="color: var(--text-muted); font-size: 0.94rem; max-width: 500px; margin: 0.35rem auto 0;">
+                            Tap the glowing glass jar to pull out a folded paper slip tucked inside just for you.
+                        </p>
+
+                        <div class="jar-counter-pill">
+                            <span>📜</span>
+                            <span id="rec-jar-progress">0 / 6 Notes Unfolded</span>
+                        </div>
+
+                        <div id="rec-jar-stage" class="jar-clickable-stage" role="button" tabindex="0" aria-label="Pull a folded note from the Love Jar" onclick="pullRecJarNote()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pullRecJarNote();}">
+                            <div id="rec-rising-slip" class="rising-note-slip" aria-hidden="true">
+                                <svg width="70" height="48" viewBox="0 0 74 52" fill="none">
+                                    <rect x="2" y="2" width="70" height="48" rx="6" fill="#fff8f9" stroke="#d4af37" stroke-width="2"/>
+                                    <path d="M2 18H72M2 34H72" stroke="#d4af37" stroke-opacity="0.45" stroke-dasharray="3 2"/>
+                                    <path d="M37 31C37 31 30 26.5 30 22C30 19.6 31.8 18 34 18C35.4 18 36.5 18.8 37 19.9C37.5 18.8 38.6 18 40 18C42.2 18 44 19.6 44 22C44 26.5 37 31 37 31Z" fill="#e11d48"/>
+                                </svg>
+                            </div>
+
+                            <svg class="jar-svg-actor" width="170" height="205" viewBox="0 0 176 214" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="46" y="10" width="84" height="16" rx="6" fill="var(--accent-gold)" stroke="#fff3cf" stroke-width="1.5"/>
+                                <rect x="52" y="26" width="72" height="10" rx="3" fill="var(--accent-gold-deep)"/>
+                                <path d="M48 38H128V48H48V38Z" fill="var(--accent-primary-bright)"/>
+                                <path d="M88 43L68 58L74 64L88 48L102 64L108 58L88 43Z" fill="var(--accent-secondary)"/>
+                                <circle cx="88" cy="43" r="5.5" fill="var(--accent-gold)"/>
+                                <path d="M44 48C30 52 24 64 24 80V176C24 192 36 204 52 204H124C140 204 152 192 152 176V80C152 64 146 52 132 48H44Z" fill="rgba(255,255,255,0.14)" stroke="var(--accent-gold)" stroke-width="2.5"/>
+                                <g opacity="0.95">
+                                    <rect x="38" y="156" width="44" height="16" rx="5" transform="rotate(-12 38 156)" fill="#fff8f9" stroke="#d4af37" stroke-width="1.2"/>
+                                    <rect x="90" y="162" width="46" height="16" rx="5" transform="rotate(10 90 162)" fill="#fda4af" stroke="#fff" stroke-width="1"/>
+                                    <rect x="56" y="142" width="48" height="16" rx="5" transform="rotate(5 56 142)" fill="#fde68a" stroke="#b38b22" stroke-width="1"/>
+                                    <rect x="36" y="128" width="42" height="15" rx="5" transform="rotate(16 36 128)" fill="#fecdd3" stroke="#e11d48" stroke-width="1"/>
+                                    <rect x="94" y="132" width="44" height="15" rx="5" transform="rotate(-15 94 132)" fill="#fff8f9" stroke="#d4af37" stroke-width="1.2"/>
+                                    <rect x="62" y="114" width="46" height="15" rx="5" transform="rotate(-7 62 114)" fill="#f5d08a" stroke="#9e7818" stroke-width="1"/>
+                                </g>
+                                <path d="M88 94C88 94 74 85 74 75.5C74 70.8 77.7 67.5 82.2 67.5C84.9 67.5 87 68.9 88 71C89 68.9 91.1 67.5 93.8 67.5C98.3 67.5 102 70.8 102 75.5C102 85 88 94 88 94Z" fill="var(--accent-primary-bright)" stroke="var(--accent-gold)" stroke-width="1.5"/>
+                                <path d="M36 74V170" stroke="rgba(255,255,255,0.3)" stroke-width="4" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+
+                        <button type="button" class="btn-primary" onclick="pullRecJarNote()">
+                            <span>Pull a Folded Note ✨</span>
+                        </button>
+                    </div>
+
+                    <div class="keepsake-box-wrap">
+                        <article id="rec-parchment-card" class="parchment-letter-card">
+                            <div id="rec-quill-sprite" class="quill-pen-sprite" aria-hidden="true">
+                                <svg width="80" height="80" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M78 6C56 10 34 26 22 48L14 66L28 60C50 48 68 28 78 6Z" fill="url(#quillGoldGrad)" stroke="#fff3cf" stroke-width="1.5"/>
+                                    <path d="M76 8C54 26 34 46 10 74" stroke="#92400e" stroke-width="2" stroke-linecap="round"/>
+                                    <path d="M14 66L6 78L18 70L14 66Z" fill="#e11d48" stroke="#f5d08a" stroke-width="1.2"/>
+                                    <circle cx="6" cy="78" r="3.5" fill="#fde68a"/>
+                                    <defs>
+                                        <linearGradient id="quillGoldGrad" x1="14" y1="66" x2="78" y2="6" gradientUnits="userSpaceOnUse">
+                                            <stop offset="0%" stop-color="#f43f5e"/>
+                                            <stop offset="50%" stop-color="#f5d08a"/>
+                                            <stop offset="100%" stop-color="#fff8e1"/>
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                            </div>
+
+                            <div id="rec-initial-letter" class="initial-letter-body">
+                                <div style="text-align: center;">
+                                    <span class="parchment-tag">Final Keepsake Letter</span>
+                                    <h2 id="rec-letter-heading" class="parchment-title">To My Dearest</h2>
+                                </div>
+                                <div id="rec-letter-prose" class="parchment-prose"></div>
+
+                                <div class="sig-reveal-zone">
+                                    <div id="rec-sig-handwritten" class="sig-handwritten-text">Yours Always</div>
+                                    <div class="sig-line-rule"></div>
+                                </div>
+
+                                <div id="rec-sign-btn-bar" style="margin-top: 1.35rem; text-align: center;">
+                                    <button type="button" class="btn-primary" onclick="triggerRecMagicalPen()">
+                                        <span>Sign With Magical Pen ✒️✨</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="rec-finale-stage" class="finale-center-stage" aria-live="polite">
+                                <div id="rec-finale-lines-wrap"></div>
+                                <div id="rec-finale-stamp" class="finale-sig-stamp"></div>
+                            </div>
+                        </article>
+
+                        <div id="rec-replay-bar" style="display: none; margin-top: 1.15rem; text-align: center;">
+                            <button type="button" class="btn-gold" onclick="replayRecMagicalPen()">
+                                <span>Replay Magical Pen ✨</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; padding-bottom: 1rem;">
+                        <button type="button" class="btn-primary" onclick="triggerRecHeartShower()">
+                            <span>Send a Heart &amp; Petal Shower Back ♥</span>
+                        </button>
+                        <p id="rec-shower-msg" style="margin-top: 0.75rem; font-family: var(--font-serif); font-size: 1.25rem; font-style: italic; color: var(--accent-gold); min-height: 1.6rem;"></p>
+                    </div>
+
+                </div>
+            </section>
+
+        </div>
+
+    </main>
+
+    <!-- MODALS -->
+    <div id="rec-envelope-modal" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this)this.classList.remove('open')">
+        <div class="modal-parchment-box">
+            <span class="parchment-tag">Wax-Sealed Secret Letter</span>
+            <h3 id="rec-env-modal-title">Title</h3>
+            <p id="rec-env-modal-body">Body</p>
+            <div id="rec-env-modal-sig" class="modal-hand-sig">Forever Yours ♥</div>
+            <div style="text-align: center;">
+                <button type="button" class="btn-primary" onclick="document.getElementById('rec-envelope-modal').classList.remove('open')">
+                    <span>Close &amp; Keep Close to Heart ♥</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="rec-jar-modal" class="modal-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this)this.classList.remove('open')">
+        <div class="modal-parchment-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-bottom: 0.85rem; padding-bottom: 0.6rem; border-bottom: 1px dashed rgba(180,134,11,0.35);">
+                <span id="rec-jar-modal-num" style="font-size: 0.74rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--parchment-accent);">Note #01</span>
+                <span id="rec-jar-modal-tag" class="parchment-tag">Promise</span>
+            </div>
+            <p id="rec-jar-modal-text" style="font-family: var(--font-serif); font-size: clamp(1.25rem, 3.2vw, 1.54rem); font-weight: 600; text-align: center; color: var(--parchment-ink); margin: 0.8rem 0 1.45rem;">
+                Note text
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center;">
+                <button type="button" class="btn-gold" onclick="pullAnotherRecJarNote()">
+                    <span>Pull Another Note ✨</span>
+                </button>
+                <button type="button" class="btn-primary" onclick="document.getElementById('rec-jar-modal').classList.remove('open')">
+                    <span>Fold &amp; Keep ♥</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+        <div class="footer-brand">🌸 PetalLock</div>
+        <div>Interactive Floral Love Letters &amp; Secret Heart Vaults</div>
+        <button type="button" id="footer-create-own-btn" class="footer-cta-link" style="display: none;" onclick="switchToCreatorFromLink()">
+            Create your own PetalLock link ✨
+        </button>
+    </footer>
+
+    <!-- Config & App Logic -->
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

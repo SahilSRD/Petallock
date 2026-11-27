@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>PetalLock Admin — Order &amp; QR Keepsake Studio</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body data-theme="crimson">
+
+    <div id="toast-banner" class="toast-banner" role="status" aria-live="polite"></div>
+    <div id="offscreen-qr-holder" style="position: fixed; left: -9999px; top: -9999px;" aria-hidden="true"></div>
+
+    <main class="app-shell" style="padding-top: 2.2rem;">
+        <div class="glass-card admin-panel-card">
+
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.4rem;">
+                <span class="pill-badge">🔐 PetalLock Admin Vault</span>
+                <div style="display: flex; gap: 0.55rem; flex-wrap: wrap;">
+                    <a href="index.html" class="btn-ghost" style="min-height: 40px; padding: 0.45rem 1rem; font-size: 0.82rem;">
+                        ← Public Site
+                    </a>
+                    <button type="button" id="btn-admin-logout" class="btn-ghost" style="display: none; min-height: 40px; padding: 0.45rem 1rem; font-size: 0.82rem;" onclick="adminLogout()">
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+
+            <!-- 1. SIGN IN FORM -->
+            <div id="admin-login-gate" style="max-width: 420px; margin: 1.5rem auto; text-align: center;">
+                <h1 style="font-family: var(--font-serif); font-size: 2.1rem; margin-bottom: 0.4rem;">
+                    Admin Sign In
+                </h1>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.35rem;">
+                    Sign in with your Supabase Admin Email &amp; Password.
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+                    <input type="email" id="admin-email" class="studio-input" placeholder="Admin email address..." autocomplete="email">
+                    <input type="password" id="admin-password" class="studio-input" placeholder="Admin password..." autocomplete="current-password">
+                    <button type="button" id="btn-login-submit" class="btn-primary" style="width: 100%;" onclick="handleAdminLogin()">
+                        Unlock Admin Dashboard 🔑
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. DASHBOARD -->
+            <div id="admin-workspace" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+                    <div>
+                        <h1 style="font-family: var(--font-serif); font-size: clamp(1.75rem, 4vw, 2.35rem);">
+                            Customer Orders Queue
+                        </h1>
+                        <p style="font-size: 0.88rem; color: var(--text-muted);">
+                            Verify ₹99 UPI payments and tap <strong>Approve &amp; Activate</strong> to make a customer's link live.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-gold" onclick="loadOrdersQueue()">
+                        🔄 Refresh Orders
+                    </button>
+                </div>
+
+                <!-- QR & Link Box -->
+                <div id="active-deliverable-box" style="display: none; margin-bottom: 1.65rem;">
+                    <div class="qr-studio-grid" style="border-color: var(--border-strong);">
+                        <div class="qr-preview-frame">
+                            <img id="admin-qr-preview-img" alt="Customer Floral QR Keepsake Card">
+                        </div>
+                        <div>
+                            <span class="pill-badge">✅ Active Customer Deliverable</span>
+                            <h3 id="deliv-title" style="font-family: var(--font-serif); font-size: 1.5rem; margin: 0.5rem 0 0.3rem;">
+                                Ready to Send
+                            </h3>
+                            <p id="deliv-key-note" style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 0.75rem;"></p>
+
+                            <div class="order-code-display-box" style="margin: 0.5rem 0 0.9rem; padding: 0.55rem 0.8rem;">
+                                <input type="text" id="deliv-magic-url" class="studio-input" style="border: none; background: transparent; font-family: monospace; font-size: 0.8rem; color: var(--accent-gold); padding: 0.2rem;" readonly>
+                                <button type="button" class="btn-primary" style="min-height: 38px; padding: 0.4rem 0.95rem; font-size: 0.8rem;" onclick="copyDeliverableUrl()">
+                                    📋 Copy Link
+                                </button>
+                            </div>
+
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.6rem;">
+                                <button type="button" class="btn-primary" style="min-height: 40px; font-size: 0.82rem;" onclick="sendDeliverableWhatsApp()">
+                                    💬 Send via WhatsApp
+                                </button>
+                                <button type="button" class="btn-gold" style="min-height: 40px; font-size: 0.82rem;" onclick="downloadDeliverableQr()">
+                                    ⬇️ Download QR (PNG)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="orders-list-container">
+                    <p style="color: var(--text-muted); text-align: center; padding: 2rem 0;">Loading orders...</p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="config.js"></script>
+    <script>
+        let supabaseAdmin = null;
+        try {
+            if (!window.supabase) throw new Error('Supabase library did not load. Check your internet connection.');
+            if (typeof PETALLOCK_CONFIG === 'undefined') throw new Error('config.js has a typo or is missing.');
+            supabaseAdmin = window.supabase.createClient(
+                PETALLOCK_CONFIG.SUPABASE_URL,
+                PETALLOCK_CONFIG.SUPABASE_ANON_KEY
+            );
+        } catch (err) {
+            alert('Config Error: ' + err.message);
+        }
+
+        const THEME_QR_COLORS = {
+            crimson: { bg: '#19040b', card: '#260610', accent: '#e11d48', gold: '#e8c27a', text: '#fff5f7', dark: '#260610' },
+            midnight: { bg: '#0b0617', card: '#130b24', accent: '#ff7eb3', gold: '#f3d9b1', text: '#fdf4ff', dark: '#130b24' },
+            ivory: { bg: '#f7ecdc', card: '#fdf6ec', accent: '#c85a7c', gold: '#b8860b', text: '#2d131c', dark: '#2d131c' }
+        };
+
+        let cachedOrders = [];
+        let activeDeliverable = null;
+        let currentQrDataUrl = '';
+
+        function showToast(msg) {
+            const t = document.getElementById('toast-banner');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(t._timer);
+            t._timer = setTimeout(() => t.classList.remove('show'), 3200);
+        }
+
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        async function checkAdminSession() {
+            if (!supabaseAdmin) return;
+            const { data: { session } } = await supabaseAdmin.auth.getSession();
+            if (session) {
+                showUnlockedWorkspace();
+            } else {
+                document.getElementById('admin-login-gate').style.display = 'block';
+                document.getElementById('admin-workspace').style.display = 'none';
+                document.getElementById('btn-admin-logout').style.display = 'none';
+            }
+        }
+
+        async function handleAdminLogin() {
+            if (!supabaseAdmin) {
+                alert('Cannot sign in because config.js or Supabase failed to load.');
+                return;
+            }
+            const email = document.getElementById('admin-email').value.trim();
+            const password = document.getElementById('admin-password').value;
+
+            if (!email || !password) {
+                alert('Please enter both your email and password.');
+                return;
+            }
+
+            const btn = document.getElementById('btn-login-submit');
+            btn.disabled = true;
+            btn.textContent = 'Signing in... ⏳';
+
+            const { error } = await supabaseAdmin.auth.signInWithPassword({ email, password });
+            btn.disabled = false;
+            btn.textContent = 'Unlock Admin Dashboard 🔑';
+
+            if (error) {
+                alert('Login Failed: ' + error.message);
+            } else {
+                showToast('🔐 Signed in securely!');
+                showUnlockedWorkspace();
+            }
+        }
+
+        async function adminLogout() {
+            if (supabaseAdmin) await supabaseAdmin.auth.signOut();
+            checkAdminSession();
+            showToast('Signed out.');
+        }
+
+        function showUnlockedWorkspace() {
+            document.getElementById('admin-login-gate').style.display = 'none';
+            document.getElementById('admin-workspace').style.display = 'block';
+            document.getElementById('btn-admin-logout').style.display = 'inline-flex';
+            loadOrdersQueue();
+        }
+
+        async function loadOrdersQueue() {
+            const container = document.getElementById('orders-list-container');
+            container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 1.5rem 0;">Fetching orders...</p>';
+
+            const { data, error } = await supabaseAdmin
+                .from('vaults')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if (error) {
+                container.innerHTML = `<p style="color: var(--accent-secondary); text-align: center;">Error: ${escapeHtml(error.message)}</p>`;
+                return;
+            }
+
+            cachedOrders = data || [];
+            if (cachedOrders.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 2rem 0;">No orders yet. Create a test order on index.html!</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            cachedOrders.forEach((order) => {
+                const p = order.payload || {};
+                const isApproved = order.status === 'approved';
+                const createdStr = new Date(order.created_at).toLocaleString();
+
+                const card = document.createElement('div');
+                card.className = `admin-order-card ${isApproved ? 'approved' : ''}`;
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.65rem;">
+                            <strong style="font-family: monospace; font-size: 1.15rem; color: var(--accent-gold);">${escapeHtml(order.id)}</strong>
+                            <span class="status-badge ${isApproved ? 'approved' : 'pending'}">${escapeHtml(order.status)}</span>
+                        </div>
+                        <span style="font-size: 0.78rem; color: var(--text-muted);">${escapeHtml(createdStr)}</span>
+                    </div>
+
+                    <div style="font-size: 0.9rem; color: var(--text-primary);">
+                        <strong>From:</strong> ${escapeHtml(p.yourName || '—')} &nbsp;•&nbsp;
+                        <strong>For:</strong> ${escapeHtml(p.herName || '—')} &nbsp;•&nbsp;
+                        <strong>Key:</strong> <code>${escapeHtml(p.secretKey || '—')}</code>
+                    </div>
+
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.25rem;">
+                        ${!isApproved ? `
+                            <button type="button" class="btn-primary" style="min-height: 40px; padding: 0.45rem 1.1rem; font-size: 0.82rem;" onclick="approveOrder('${escapeHtml(order.id)}')">
+                                ✅ Approve &amp; Activate (₹99 Paid)
+                            </button>
+                        ` : `
+                            <button type="button" class="btn-gold" style="min-height: 40px; padding: 0.45rem 1.1rem; font-size: 0.82rem;" onclick="openDeliverableStudio('${escapeHtml(order.id)}')">
+                                🔗 Get Magic Link &amp; QR Card
+                            </button>
+                        `}
+                        <button type="button" class="btn-ghost" style="min-height: 40px; padding: 0.45rem 0.95rem; font-size: 0.8rem;" onclick="deleteOrder('${escapeHtml(order.id)}')">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        async function approveOrder(orderId) {
+            const { error } = await supabaseAdmin
+                .from('vaults')
+                .update({ status: 'approved' })
+                .eq('id', orderId);
+
+            if (error) {
+                alert('Could not approve: ' + error.message);
+                return;
+            }
+
+            showToast(`✅ Order ${orderId} is now LIVE!`);
+            await loadOrdersQueue();
+            openDeliverableStudio(orderId);
+        }
+
+        async function deleteOrder(orderId) {
+            if (!confirm(`Delete order ${orderId}?`)) return;
+            const { error } = await supabaseAdmin
+                .from('vaults')
+                .delete()
+                .eq('id', orderId);
+
+            if (error) {
+                alert('Delete failed: ' + error.message);
+                return;
+            }
+            if (activeDeliverable && activeDeliverable.id === orderId) {
+                document.getElementById('active-deliverable-box').style.display = 'none';
+            }
+            showToast(`🗑️ Order ${orderId} deleted.`);
+            loadOrdersQueue();
+        }
+
+        function getPublicMagicUrl(orderId) {
+            const base = window.location.href.replace(/admin\.html.*$/i, 'index.html');
+            return `${base}?v=${encodeURIComponent(orderId)}`;
+        }
+
+        function openDeliverableStudio(orderId) {
+            const order = cachedOrders.find(o => o.id === orderId);
+            if (!order) return;
+
+            const p = order.payload || {};
+            const magicUrl = getPublicMagicUrl(orderId);
+            activeDeliverable = { id: orderId, payload: p, url: magicUrl };
+
+            document.getElementById('deliv-title').textContent = `For ${p.herName || 'Her'} (${orderId})`;
+            document.getElementById('deliv-key-note').innerHTML = `Secret Key to Unlock: <code>${escapeHtml(p.secretKey || p.herName)}</code>`;
+            document.getElementById('deliv-magic-url').value = magicUrl;
+            document.getElementById('active-deliverable-box').style.display = 'block';
+
+            renderQrKeepsakeCard(p, magicUrl);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function copyDeliverableUrl() {
+            if (!activeDeliverable) return;
+            navigator.clipboard.writeText(activeDeliverable.url)
+                .then(() => showToast('📋 Shareable magic link copied!'))
+                .catch(() => alert('Copy this link: ' + activeDeliverable.url));
+        }
+
+        function sendDeliverableWhatsApp() {
+            if (!activeDeliverable) return;
+            const p = activeDeliverable.payload;
+            const msg = encodeURIComponent(
+                `Your PetalLock surprise for ${p.herName} is unlocked and ready! 🌸✨\n\nSend her this private link:\n${activeDeliverable.url}\n\nSecret Key to unlock: ${p.secretKey}`
+            );
+            window.open(`https://wa.me/?text=${msg}`, '_blank', 'noopener,noreferrer');
+        }
+
+        function downloadDeliverableQr() {
+            if (!currentQrDataUrl || !activeDeliverable) return;
+            const safeName = (activeDeliverable.payload.herName || 'love').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            const a = document.createElement('a');
+            a.download = `petallock-${safeName}-${activeDeliverable.id}.png`;
+            a.href = currentQrDataUrl;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast('⬇️ Floral QR Card downloaded!');
+        }
+
+        function renderQrKeepsakeCard(p, magicUrl) {
+            const holder = document.getElementById('offscreen-qr-holder');
+            holder.innerHTML = '';
+            const pal = THEME_QR_COLORS[p.theme] || THEME_QR_COLORS.crimson;
+
+            if (typeof QRCode !== 'undefined') {
+                new QRCode(holder, {
+                    text: magicUrl,
+                    width: 420,
+                    height: 420,
+                    colorDark: pal.dark,
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            }
+
+            setTimeout(() => {
+                const source = holder.querySelector('canvas') || holder.querySelector('img');
+                const canvas = document.createElement('canvas');
+                canvas.width = 900;
+                canvas.height = 1220;
+                const ctx = canvas.getContext('2d');
+
+                ctx.fillStyle = pal.bg;
+                ctx.fillRect(0, 0, 900, 1220);
+
+                roundRectCanvas(ctx, 48, 48, 804, 1124, 42);
+                ctx.fillStyle = pal.card;
+                ctx.fill();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = pal.gold;
+                ctx.stroke();
+
+                ctx.fillStyle = pal.gold;
+                ctx.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('A SECRET LOCKED IN MY HEART', 450, 155);
+
+                ctx.fillStyle = pal.text;
+                ctx.font = 'italic bold 74px "Cormorant Garamond", Georgia, serif';
+                ctx.fillText(`For ${p.herName || 'My Love'}`, 450, 245);
+
+                ctx.fillStyle = pal.accent;
+                ctx.font = '34px serif';
+                ctx.fillText('—  ♥  —', 450, 305);
+
+                roundRectCanvas(ctx, 215, 345, 470, 470, 32);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = pal.gold;
+                ctx.stroke();
+
+                if (source) ctx.drawImage(source, 245, 375, 410, 410);
+
+                ctx.fillStyle = pal.text;
+                ctx.font = 'bold 42px "Cormorant Garamond", Georgia, serif';
+                ctx.fillText('Scan to Unlock My Heart', 450, 895);
+
+                ctx.fillStyle = pal.gold;
+                ctx.font = 'italic 28px "Cormorant Garamond", Georgia, serif';
+                ctx.fillText(`Secret Key: "${p.secretKey || p.herName}"`.slice(0, 44), 450, 955);
+
+                ctx.fillStyle = pal.text;
+                ctx.font = '30px "Cormorant Garamond", Georgia, serif';
+                ctx.fillText((p.signature || '').slice(0, 40), 450, 1035);
+
+                ctx.fillStyle = pal.accent;
+                ctx.font = 'bold 22px "Plus Jakarta Sans", sans-serif';
+                ctx.fillText('🌸 PetalLock', 450, 1110);
+
+                currentQrDataUrl = canvas.toDataURL('image/png');
+                document.getElementById('admin-qr-preview-img').src = currentQrDataUrl;
+            }, 130);
+        }
+
+        function roundRectCanvas(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        }
+
+        window.addEventListener('DOMContentLoaded', checkAdminSession);
+    </script>
+</body>
+</html>
