@@ -10,6 +10,6 @@ const PETALLOCK_CONFIG = {
     // 2. Your Real Seller Payment & Contact Details (Shown to all customers at checkout)
     SELLER_WHATSAPP: '919149985179', // Include country code without '+' (e.g., 919876543210)
     SELLER_INSTAGRAM: '@petallock',
-    SELLER_UPI: '9149985179-s703@ybl',
+    SELLER_UPI: 'petallock@ybl',
     PRICE_INR: 99
 };

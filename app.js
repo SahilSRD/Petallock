@@ -1455,6 +1455,7 @@ async function bootPetalLockApp() {
             return;
         } else {
             showToast('⏳ This vault is pending activation or does not exist.');
+            return;
         }
     }
 
