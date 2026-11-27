@@ -794,12 +794,10 @@ function setDeepEditMode(enableDeep, silent = false) {
 
     if (enableDeep) {
         const hydrated = buildHydratedExperience(studioState);
-        if (!studioState.flipCards || studioState.flipCards.length !== 6) {
-            studioState.flipCards = hydrated.flipCards.map(c => ({ ...c }));
-        }
-        if (!studioState.envelopes || studioState.envelopes.length !== 4) {
-            studioState.envelopes = hydrated.envelopes.map(e => ({ ...e }));
-        }
+        // Always rebuild flipCards and envelopes from hydrated experience
+        // to ensure they're properly populated with default values
+        studioState.flipCards = hydrated.flipCards.map(c => ({ ...c }));
+        studioState.envelopes = hydrated.envelopes.map(e => ({ ...e }));
         renderDeepEditFields();
     }
     if (!silent) playHarpPluck(523.25);
